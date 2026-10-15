@@ -260,3 +260,5 @@ paket-files/
 __pycache__/
 *.pyc
 /Dancer/libs/CustomEmotesAPI.dll
+Dancer/Thunderstore/plugins/
+Dancer/Thunderstore/Thunderstore.zip

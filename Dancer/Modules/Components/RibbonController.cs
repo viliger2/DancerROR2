@@ -8,7 +8,6 @@ using UnityEngine.Networking;
 
 namespace Dancer.Modules.Components
 {
-
     public class RibbonController : NetworkBehaviour
     {
         public static bool naturalSpread = false;

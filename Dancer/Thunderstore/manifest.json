@@ -1,0 +1,16 @@
+﻿{
+	"name": "Dancer",
+	"version_number": "0.11.0",
+	"website_url": "https://github.com/viliger2/DancerROR2",
+	"description": "You can dance (if you want to). Under new management.",
+	"dependencies": [
+		"bbepis-BepInExPack-5.4.2122",
+		"RiskofThunder-HookGenPatcher-1.2.9",
+		"score-MiscFixes-1.6.1",
+		"RiskofThunder-R2API_Language-1.1.0",
+		"RiskofThunder-R2API_Prefab-1.1.1",
+		"RiskofThunder-R2API_RecalculateStats-1.6.6",
+		"RiskofThunder-R2API_Orb-1.0.1",
+		"RiskofThunder-R2API_DamageType-1.1.7"
+	]
+}

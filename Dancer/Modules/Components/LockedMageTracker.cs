@@ -11,7 +11,6 @@ using UnityEngine.AddressableAssets;
 
 namespace Dancer.Modules.Components
 {
-
     public class LockedMageTracker
     {
         private delegate int RunInstanceReturnInt(Run self);

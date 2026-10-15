@@ -1,14 +1,16 @@
 using RoR2;
 using System.Collections.Generic;
+using System.Net;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace Dancer.Modules
 {
 
     internal static class ItemDisplays
     {
-        private static Dictionary<string, GameObject> itemDisplayPrefabs = new Dictionary<string, GameObject>();
+        private static Dictionary<string, AssetReferenceGameObject> itemDisplayPrefabs = new Dictionary<string, AssetReferenceGameObject>();
 
         internal static void PopulateDisplays()
         {
@@ -20,22 +22,24 @@ namespace Dancer.Modules
                 ItemDisplayRule[] rules = keyAssetRuleGroups[i].displayRuleGroup.rules;
                 for (int j = 0; j < rules.Length; j++)
                 {
-                    GameObject followerPrefab = rules[j].followerPrefab;
-                    if ((bool)followerPrefab)
+                    if (rules[j].followerPrefabAddress.RuntimeKeyIsValid())
                     {
-                        string key = followerPrefab.name?.ToLower();
-                        if (!itemDisplayPrefabs.ContainsKey(key))
+                        var handle = Addressables.LoadResourceLocationsAsync(rules[j].followerPrefabAddress.AssetGUID);
+                        var address = handle.WaitForCompletion();
+                        if(address.Count > 0)
                         {
-                            itemDisplayPrefabs[key] = followerPrefab;
+                            var assetName = System.IO.Path.GetFileNameWithoutExtension(address[0].PrimaryKey);
+                            itemDisplayPrefabs[assetName.ToLower()] = rules[j].followerPrefabAddress;
                         }
+                        Addressables.Release(handle);
                     }
                 }
             }
         }
 
-        internal static GameObject LoadDisplay(string name)
+        internal static AssetReferenceGameObject LoadDisplay(string name)
         {
-            if (itemDisplayPrefabs.ContainsKey(name.ToLower()) && (bool)itemDisplayPrefabs[name.ToLower()])
+            if (itemDisplayPrefabs.ContainsKey(name.ToLower()) && itemDisplayPrefabs[name.ToLower()].RuntimeKeyIsValid())
             {
                 return itemDisplayPrefabs[name.ToLower()];
             }

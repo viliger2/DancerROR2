@@ -5,7 +5,6 @@ using UnityEngine.Networking;
 
 namespace Dancer.Modules.Components
 {
-
     public class ProjectileSpawnRibbonController : MonoBehaviour, IProjectileImpactBehavior
     {
         private ProjectileController controller;

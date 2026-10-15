@@ -3,6 +3,7 @@ using Dancer.SkillStates;
 using Dancer.SkillStates.DirectionalM1;
 using Dancer.SkillStates.M1;
 using EntityStates;
+using HG;
 using R2API;
 using RoR2;
 using RoR2.Skills;
@@ -74,8 +75,10 @@ namespace Dancer.Modules.Survivors
             characterPrefab.GetComponent<CharacterMotor>().mass = 200f;
             characterPrefab.GetComponent<EntityStateMachine>().mainStateType = new SerializableEntityStateType(typeof(GenericCharacterMain));
             characterPrefab.AddComponent<DancerComponent>();
+            characterPrefab.AddComponent<KeyItemSlot>();
             Material material = Assets.mainAssetBundle.LoadAsset<Material>("matDancer");
             bodyRendererIndex = 0;
+            AddStuffFromTreebot(characterPrefab);
             Prefabs.SetupCharacterModel(characterPrefab, new CustomRendererInfo[4]
             {
             new CustomRendererInfo
@@ -99,13 +102,27 @@ namespace Dancer.Modules.Survivors
                 material = material
             }
             }, bodyRendererIndex);
+            CreateSkins();
             displayPrefab = Prefabs.CreateDisplayPrefab("mdlDancer", characterPrefab);
             Prefabs.RegisterNewSurvivor(characterPrefab, displayPrefab, Color.magenta, "DANCER");
             CreateHitboxes();
             CreateSkills();
-            CreateSkins();
             InitializeItemDisplays();
             CreateDoppelganger();
+        }
+
+        private static void AddStuffFromTreebot(GameObject dancerPrefab)
+        {
+            var handle = Addressables.LoadAssetAsync<GameObject>(RoR2BepInExPack.GameAssetPathsBetter.RoR2_Base_Treebot.TreebotBody_prefab);
+            var result = handle.WaitForCompletion();
+            var akBanks = result.GetComponents<AkBank>();
+
+            foreach(var akBank in akBanks)
+            {
+                MiscFixes.Modules.Extensions.CloneComponent<AkBank>(dancerPrefab, akBank);
+            }
+
+            Addressables.Release(handle);
         }
 
         private static void CreateDoppelganger()
@@ -332,110 +349,123 @@ namespace Dancer.Modules.Survivors
             GameObject gameObject = characterPrefab.GetComponentInChildren<ModelLocator>().modelTransform.gameObject;
             CharacterModel component = gameObject.GetComponent<CharacterModel>();
             ModelSkinController modelSkinController = gameObject.AddComponent<ModelSkinController>();
-            SkinnedMeshRenderer mainSkinnedMeshRenderer = component.mainSkinnedMeshRenderer;
             CharacterModel.RendererInfo[] baseRendererInfos = component.baseRendererInfos;
-            List<SkinDef> list = new List<SkinDef>();
-            SkinDef skinDef = Skins.CreateSkinDef("NDP_DANCER_BODY_DEFAULT_SKIN_NAME", Assets.mainAssetBundle.LoadAsset<Sprite>("texMainSkin"), baseRendererInfos, mainSkinnedMeshRenderer, gameObject);
-            skinDef.meshReplacements = new SkinDef.MeshReplacement[4]
+            var meshReplacements = new SkinDefParams.MeshReplacement[4]
             {
-            new SkinDef.MeshReplacement
-            {
-                mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshDancerBody"),
-                renderer = baseRendererInfos[0].renderer
-            },
-            new SkinDef.MeshReplacement
-            {
-                mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshDancerHead"),
-                renderer = baseRendererInfos[1].renderer
-            },
-            new SkinDef.MeshReplacement
-            {
-                mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshDancerWeapon"),
-                renderer = baseRendererInfos[2].renderer
-            },
-            new SkinDef.MeshReplacement
-            {
-                mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshDancerRibbons"),
-                renderer = baseRendererInfos[3].renderer
+                new SkinDefParams.MeshReplacement
+                {
+                    mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshDancerBody"),
+                    renderer = baseRendererInfos[0].renderer
+                },
+                new SkinDefParams.MeshReplacement
+                {
+                    mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshDancerHead"),
+                    renderer = baseRendererInfos[1].renderer
+                },
+                new SkinDefParams.MeshReplacement
+                {
+                    mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshDancerWeapon"),
+                    renderer = baseRendererInfos[2].renderer
+                },
+                new SkinDefParams.MeshReplacement
+                {
+                    mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshDancerRibbons"),
+                    renderer = baseRendererInfos[3].renderer
             }
             };
-            list.Add(skinDef);
-            Material defaultMaterial = Assets.mainAssetBundle.LoadAsset<Material>("matDancerGold");
-            CharacterModel.RendererInfo[] rendererInfos = new CharacterModel.RendererInfo[4]
+            var defaultSkin = CreateSkinDef("DEFAULT", Assets.mainAssetBundle.LoadAsset<Sprite>("texMainSkin"), gameObject, baseRendererInfos, null, null, meshReplacements);
+
+            var meshReplacementsGold = new SkinDefParams.MeshReplacement[4]
             {
-            new CharacterModel.RendererInfo
-            {
-                defaultMaterial = defaultMaterial,
-                defaultShadowCastingMode = ShadowCastingMode.On,
-                ignoreOverlays = false,
-                renderer = baseRendererInfos[0].renderer
-            },
-            new CharacterModel.RendererInfo
-            {
-                defaultMaterial = defaultMaterial,
-                defaultShadowCastingMode = ShadowCastingMode.On,
-                ignoreOverlays = false,
-                renderer = baseRendererInfos[1].renderer
-            },
-            new CharacterModel.RendererInfo
-            {
-                defaultMaterial = defaultMaterial,
-                defaultShadowCastingMode = ShadowCastingMode.On,
-                ignoreOverlays = false,
-                renderer = baseRendererInfos[2].renderer
-            },
-            new CharacterModel.RendererInfo
-            {
-                defaultMaterial = null,
-                defaultShadowCastingMode = ShadowCastingMode.Off,
-                ignoreOverlays = true,
-                renderer = baseRendererInfos[3].renderer
-            }
-            };
-            SkinDef.MeshReplacement[] meshReplacements = new SkinDef.MeshReplacement[4]
-            {
-            new SkinDef.MeshReplacement
+            new SkinDefParams.MeshReplacement
             {
                 mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshGoldBody"),
                 renderer = baseRendererInfos[0].renderer
             },
-            new SkinDef.MeshReplacement
+            new SkinDefParams.MeshReplacement
             {
                 mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshGoldHead"),
                 renderer = baseRendererInfos[1].renderer
             },
-            new SkinDef.MeshReplacement
+            new SkinDefParams.MeshReplacement
             {
                 mesh = Assets.mainAssetBundle.LoadAsset<Mesh>("meshGoldWeapon"),
                 renderer = baseRendererInfos[2].renderer
             },
-            new SkinDef.MeshReplacement
+            new SkinDefParams.MeshReplacement
             {
                 mesh = null,
                 renderer = baseRendererInfos[3].renderer
             }
             };
-            On.RoR2.SkinDef.Awake += DoNothing;
-            SkinDef skinDef2 = ScriptableObject.CreateInstance<SkinDef>();
-            skinDef2.baseSkins = Array.Empty<SkinDef>();
-            skinDef2.icon = Assets.mainAssetBundle.LoadAsset<Sprite>("texGoldSkin");
-            skinDef2.unlockableDef = null;
-            skinDef2.rootObject = gameObject;
-            skinDef2.rendererInfos = rendererInfos;
-            skinDef2.gameObjectActivations = new SkinDef.GameObjectActivation[0];
-            skinDef2.meshReplacements = meshReplacements;
-            skinDef2.projectileGhostReplacements = new SkinDef.ProjectileGhostReplacement[0];
-            skinDef2.minionSkinReplacements = new SkinDef.MinionSkinReplacement[0];
-            skinDef2.nameToken = "NDP_DANCER_GOLD_SKIN_NAME";
-            skinDef2.name = "NDP_DANCER_GOLD_SKIN_NAME";
-            On.RoR2.SkinDef.Awake -= DoNothing;
-            LanguageAPI.Add("NDP_DANCER_GOLD_SKIN_NAME", "Gold");
-            list.Add(skinDef2);
-            modelSkinController.skins = list.ToArray();
+            Material goldMaterial = Assets.mainAssetBundle.LoadAsset<Material>("matDancerGold");
+            CharacterModel.RendererInfo[] rendererInfosGold = new CharacterModel.RendererInfo[4]
+            {
+                new CharacterModel.RendererInfo
+                {
+                    defaultMaterial = goldMaterial,
+                    defaultShadowCastingMode = ShadowCastingMode.On,
+                    ignoreOverlays = false,
+                    renderer = baseRendererInfos[0].renderer
+                },
+                new CharacterModel.RendererInfo
+                {
+                    defaultMaterial = goldMaterial,
+                    defaultShadowCastingMode = ShadowCastingMode.On,
+                    ignoreOverlays = false,
+                    renderer = baseRendererInfos[1].renderer
+                },
+                new CharacterModel.RendererInfo
+                {
+                    defaultMaterial = goldMaterial,
+                    defaultShadowCastingMode = ShadowCastingMode.On,
+                    ignoreOverlays = false,
+                    renderer = baseRendererInfos[2].renderer
+                },
+                new CharacterModel.RendererInfo
+                {
+                    defaultMaterial = null,
+                    defaultShadowCastingMode = ShadowCastingMode.Off,
+                    ignoreOverlays = true,
+                    renderer = baseRendererInfos[3].renderer
+                }
+            };
+            var goldSkin = CreateSkinDef("GOLD", Assets.mainAssetBundle.LoadAsset<Sprite>("texGoldSkin"), gameObject, rendererInfosGold, defaultSkin, null, meshReplacementsGold);
+
+            modelSkinController.skins = new SkinDef[] {defaultSkin, goldSkin};
         }
 
-        private static void DoNothing(On.RoR2.SkinDef.orig_Awake orig, RoR2.SkinDef self)
+        public static SkinDef CreateSkinDef(string name, Sprite icon, GameObject model, CharacterModel.RendererInfo[] renderInfo, SkinDef baseSkin = null, GameObject[] gameObjectActivations = null, SkinDefParams.MeshReplacement[] meshReplacements = null)
         {
+            var skinDef = ScriptableObject.CreateInstance<SkinDef>();
+            (skinDef as ScriptableObject).name = name;
+            skinDef.icon = icon;
+
+            if (baseSkin)
+            {
+                skinDef.baseSkins = new SkinDef[] { baseSkin };
+            }
+            skinDef.rootObject = model;
+            skinDef.nameToken = "NDP_DANCER_BODY_" + name.ToUpper() + "_SKIN_NAME";
+            var skinDefParams = ScriptableObject.CreateInstance<SkinDefParams>();
+            (skinDefParams as ScriptableObject).name = name + "SkinDefParams";
+
+            skinDefParams.rendererInfos = renderInfo;
+            if (gameObjectActivations != null)
+            {
+                skinDefParams.gameObjectActivations = Array.ConvertAll(gameObjectActivations, item => new SkinDefParams.GameObjectActivation
+                {
+                    gameObject = item,
+                    shouldActivate = true
+                });
+            }
+            if (meshReplacements != null)
+            {
+                skinDefParams.meshReplacements = meshReplacements;
+            }
+            skinDef.skinDefParams = skinDefParams;
+
+            return skinDef;
         }
 
         private static void InitializeItemDisplays()
@@ -459,7 +489,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBugWings"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBugWings"),
                         childName = "Chest",
                         localPos = new Vector3(0.00477f, 0.10516f, -0.07228f),
                         localAngles = new Vector3(341.0195f, 0f, 0f),
@@ -479,7 +509,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayGoldGat"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayGoldGat"),
                         childName = "Chest",
                         localPos = new Vector3(0.19943f, 0.36153f, 0.04903f),
                         localAngles = new Vector3(58.84191f, 250.4249f, 142.6867f),
@@ -499,7 +529,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBFG"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBFG"),
                         childName = "Chest",
                         localPos = new Vector3(0.10222f, 0.20518f, 0.05978f),
                         localAngles = new Vector3(0f, 0f, 327.4607f),
@@ -519,7 +549,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayGlasses"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayGlasses"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.12999f, 0.16031f),
                         localAngles = new Vector3(9.15538f, 0f, 0f),
@@ -539,7 +569,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplaySyringeCluster"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplaySyringeCluster"),
                         childName = "UpperArmR",
                         localPos = new Vector3(-0.00565f, 0.18895f, -0.04959f),
                         localAngles = new Vector3(352.4485f, 266.223f, 79.63069f),
@@ -559,7 +589,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBehemoth"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBehemoth"),
                         childName = "Chest",
                         localPos = new Vector3(0f, 0.2158f, -0.19895f),
                         localAngles = new Vector3(6.223f, 180f, 330.578f),
@@ -579,7 +609,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayMissileLauncher"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayMissileLauncher"),
                         childName = "Chest",
                         localPos = new Vector3(-0.42134f, 0.52133f, 0.02885f),
                         localAngles = new Vector3(2.35642f, 3.01076f, 51.98444f),
@@ -599,7 +629,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayDagger"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayDagger"),
                         childName = "Chest",
                         localPos = new Vector3(0.27055f, 0.31367f, -0.03923f),
                         localAngles = new Vector3(305.3635f, 11.31594f, 355.1549f),
@@ -609,7 +639,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayDagger"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayDagger"),
                         childName = "Chest",
                         localPos = new Vector3(-0.26105f, 0.30321f, -0.044f),
                         localAngles = new Vector3(56.48328f, 175.5279f, 179.5179f),
@@ -629,7 +659,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayHoof"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayHoof"),
                         childName = "CalfL",
                         localPos = new Vector3(-0.01997f, 0.78193f, 0.05326f),
                         localAngles = new Vector3(87.04044f, 76.51312f, 243.9886f),
@@ -649,7 +679,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayUkulele"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayUkulele"),
                         childName = "Chest",
                         localPos = new Vector3(-0.0011f, 0.1031f, -0.16005f),
                         localAngles = new Vector3(9.29676f, 174.7346f, 24.99983f),
@@ -669,7 +699,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayMask"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayMask"),
                         childName = "Head",
                         localPos = new Vector3(0.00301f, 0.12038f, 0.056f),
                         localAngles = new Vector3(7.80833f, 0f, 0f),
@@ -689,7 +719,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayMushroom"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayMushroom"),
                         childName = "UpperArmR",
                         localPos = new Vector3(-0.00688f, 0.15733f, -0.04649f),
                         localAngles = new Vector3(359.4526f, 271.4876f, 89.98575f),
@@ -709,7 +739,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayWolfPelt"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayWolfPelt"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.14479f, 0.09794f),
                         localAngles = new Vector3(13.53955f, 0f, 0f),
@@ -729,7 +759,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayTriTip"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayTriTip"),
                         childName = "Pelvis",
                         localPos = new Vector3(0.19175f, 0.34523f, 0.0177f),
                         localAngles = new Vector3(36.59357f, 177.5122f, 178.7256f),
@@ -749,7 +779,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayWarbanner"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayWarbanner"),
                         childName = "Chest",
                         localPos = new Vector3(0.0168f, 0.26039f, -0.21587f),
                         localAngles = new Vector3(0f, 0f, 90f),
@@ -769,7 +799,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayScythe"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayScythe"),
                         childName = "Chest",
                         localPos = new Vector3(-0.08898f, 0.08614f, -0.19459f),
                         localAngles = new Vector3(293.1983f, 281.6273f, 259.683f),
@@ -789,7 +819,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplaySnail"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplaySnail"),
                         childName = "Chest",
                         localPos = new Vector3(-0.11196f, 0.21602f, 0.01362f),
                         localAngles = new Vector3(24.59701f, 9.63536f, 35.11288f),
@@ -809,7 +839,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayClover"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayClover"),
                         childName = "Head",
                         localPos = new Vector3(0.0039f, 0.04673f, 0.2657f),
                         localAngles = new Vector3(85.61921f, 0.0001f, 179.4897f),
@@ -829,7 +859,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayAegis"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayAegis"),
                         childName = "LowerArmR",
                         localPos = new Vector3(-0.08954f, 0.0619f, 0.01725f),
                         localAngles = new Vector3(81.85985f, 259.0763f, 155.0281f),
@@ -849,7 +879,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBoneCrown"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBoneCrown"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.15792f, -0.02926f),
                         localAngles = new Vector3(13.43895f, 311.3283f, 343.426f),
@@ -869,7 +899,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayPauldron"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayPauldron"),
                         childName = "UpperArmR",
                         localPos = new Vector3(-0.07401f, 0.15409f, -0.07474f),
                         localAngles = new Vector3(65.18475f, 214.0179f, 355.7895f),
@@ -889,7 +919,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBuckler"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBuckler"),
                         childName = "LowerArmR",
                         localPos = new Vector3(0.00659f, 0.25923f, 0.00061f),
                         localAngles = new Vector3(357.2321f, 117.9287f, 90.60644f),
@@ -909,7 +939,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayIceRing"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayIceRing"),
                         childName = "Weapon",
                         localPos = new Vector3(0.00685f, 0.08912f, 0f),
                         localAngles = new Vector3(274.3965f, 90f, 270f),
@@ -929,7 +959,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayFireRing"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayFireRing"),
                         childName = "Weapon",
                         localPos = new Vector3(0.0028f, 0.24892f, 1E-05f),
                         localAngles = new Vector3(274.3965f, 90f, 270f),
@@ -949,7 +979,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayAfterburnerShoulderRing"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayAfterburnerShoulderRing"),
                         childName = "Chest",
                         localPos = new Vector3(-0.34596f, 0.28343f, -0.00666f),
                         localAngles = new Vector3(313.2421f, 95.99242f, 180f),
@@ -959,7 +989,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayAfterburnerShoulderRing"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayAfterburnerShoulderRing"),
                         childName = "Chest",
                         localPos = new Vector3(0.34932f, 0.30434f, -0.00161f),
                         localAngles = new Vector3(49.85487f, 108.7415f, 199.3213f),
@@ -979,7 +1009,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayWaxBird"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayWaxBird"),
                         childName = "Head",
                         localPos = new Vector3(0f, -0.20925f, -0.41214f),
                         localAngles = new Vector3(34.52309f, 0f, 0f),
@@ -999,7 +1029,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayWarhammer"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayWarhammer"),
                         childName = "Chest",
                         localPos = new Vector3(0.0513f, 0.0652f, -0.0792f),
                         localAngles = new Vector3(64.189f, 90f, 90f),
@@ -1019,7 +1049,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayDiamond"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayDiamond"),
                         childName = "Weapon",
                         localPos = new Vector3(-0.002f, -0.03488f, 0f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -1039,7 +1069,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayRepulsionArmorPlate"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayRepulsionArmorPlate"),
                         childName = "LowerArmL",
                         localPos = new Vector3(0.06063f, 0.19185f, -0.01304f),
                         localAngles = new Vector3(76.57407f, 81.50978f, 180f),
@@ -1059,7 +1089,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayMissileRack"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayMissileRack"),
                         childName = "Chest",
                         localPos = new Vector3(-0.23202f, 0.28282f, 0.01393f),
                         localAngles = new Vector3(342.4002f, 168.7708f, 34.96157f),
@@ -1079,7 +1109,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayFeather"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayFeather"),
                         childName = "Head",
                         localPos = new Vector3(-0.01522f, 0.13423f, -0.05715f),
                         localAngles = new Vector3(314.8987f, 357.7154f, 11.71727f),
@@ -1099,7 +1129,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayCrowbar"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayCrowbar"),
                         childName = "Pelvis",
                         localPos = new Vector3(-0.1691f, 0.24688f, -0.14963f),
                         localAngles = new Vector3(43.55907f, 11.81575f, 11.82357f),
@@ -1119,7 +1149,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayGravBoots"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayGravBoots"),
                         childName = "CalfL",
                         localPos = new Vector3(-0.0038f, 0.37291f, -0.01597f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -1129,7 +1159,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayGravBoots"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayGravBoots"),
                         childName = "CalfR",
                         localPos = new Vector3(-0.0038f, 0.37291f, -0.01597f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -1149,7 +1179,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayGuillotine"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayGuillotine"),
                         childName = "ThighR",
                         localPos = new Vector3(-0.15427f, 0.16356f, 0.0345f),
                         localAngles = new Vector3(80.68687f, 279.3683f, 175.5874f),
@@ -1169,7 +1199,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBattery"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBattery"),
                         childName = "Weapon",
                         localPos = new Vector3(0.00188f, 0.07925f, -0.00277f),
                         localAngles = new Vector3(272.4369f, 145.8502f, 32.1286f),
@@ -1189,7 +1219,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayDevilHorns"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayDevilHorns"),
                         childName = "Head",
                         localPos = new Vector3(-0.0949f, 0.0945f, 0.0654f),
                         localAngles = new Vector3(6.82254f, 22.89301f, 0f),
@@ -1199,7 +1229,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayDevilHorns"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayDevilHorns"),
                         childName = "Head",
                         localPos = new Vector3(0.0949f, 0.0945f, 0.0654f),
                         localAngles = new Vector3(6.82253f, 337.107f, 0f),
@@ -1219,7 +1249,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayInfusion"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayInfusion"),
                         childName = "Chest",
                         localPos = new Vector3(-0.17919f, -0.00327f, 0.06826f),
                         localAngles = new Vector3(20.46128f, 304.1627f, 0f),
@@ -1239,7 +1269,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayMedkit"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayMedkit"),
                         childName = "Pelvis",
                         localPos = new Vector3(0.11193f, 0.30977f, 0.0997f),
                         localAngles = new Vector3(280.1438f, 349.5922f, 38.17199f),
@@ -1259,7 +1289,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBandolier"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBandolier"),
                         childName = "Pelvis",
                         localPos = new Vector3(0.01815f, 0.35131f, -0.02141f),
                         localAngles = new Vector3(270f, 0f, 0f),
@@ -1279,7 +1309,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayHook"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayHook"),
                         childName = "Chest",
                         localPos = new Vector3(0.167f, 0.23155f, -0.0053f),
                         localAngles = new Vector3(358.6279f, 35.35772f, 283.0336f),
@@ -1299,7 +1329,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayGasoline"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayGasoline"),
                         childName = "ThighL",
                         localPos = new Vector3(0.1586f, 0.09434f, 0.04533f),
                         localAngles = new Vector3(78.44348f, 270f, 270f),
@@ -1319,7 +1349,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayStunGrenade"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayStunGrenade"),
                         childName = "Chest",
                         localPos = new Vector3(-0.18348f, -0.04668f, 0.05757f),
                         localAngles = new Vector3(8.86498f, 4.53647f, 11.30128f),
@@ -1339,7 +1369,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayFirework"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayFirework"),
                         childName = "HandR",
                         localPos = new Vector3(0.03615f, 0.09452f, 0.09992f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -1359,7 +1389,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayLunarDagger"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayLunarDagger"),
                         childName = "HandR",
                         localPos = new Vector3(0.01621f, 0.05569f, 0.01211f),
                         localAngles = new Vector3(65.45142f, 346.3312f, 235.2556f),
@@ -1379,7 +1409,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayKnurl"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayKnurl"),
                         childName = "UpperArmR",
                         localPos = new Vector3(-0.02841f, 0.14421f, -0.01509f),
                         localAngles = new Vector3(78.87074f, 36.6722f, 105.8275f),
@@ -1399,7 +1429,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBeetleGland"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBeetleGland"),
                         childName = "Pelvis",
                         localPos = new Vector3(-0.25656f, 0.29023f, -0.0332f),
                         localAngles = new Vector3(349.7159f, 177.1544f, 2.7042f),
@@ -1419,7 +1449,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplaySoda"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplaySoda"),
                         childName = "Pelvis",
                         localPos = new Vector3(-0.19025f, 0.25343f, -0.03256f),
                         localAngles = new Vector3(270f, 251.0168f, 0f),
@@ -1439,7 +1469,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayDoubleMag"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayDoubleMag"),
                         childName = "LowerArmL",
                         localPos = new Vector3(-0.06727f, 0.18375f, 0.03843f),
                         localAngles = new Vector3(335.0898f, 25.122f, 176.703f),
@@ -1459,7 +1489,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayStickyBomb"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayStickyBomb"),
                         childName = "HandR",
                         localPos = new Vector3(0.01519f, 0.0686f, -0.08218f),
                         localAngles = new Vector3(78.27731f, 2E-05f, 171.4936f),
@@ -1479,7 +1509,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayKey"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayKey"),
                         childName = "CalfR",
                         localPos = new Vector3(-0.06349f, -0.13659f, -0.04507f),
                         localAngles = new Vector3(345.2247f, 238.6147f, 228.6344f),
@@ -1499,7 +1529,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayAPRound"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayAPRound"),
                         childName = "Pelvis",
                         localPos = new Vector3(0.21936f, 0.36784f, -0.00669f),
                         localAngles = new Vector3(78.75988f, 151.3122f, 84.95592f),
@@ -1519,7 +1549,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBauble"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBauble"),
                         childName = "UpperArmR",
                         localPos = new Vector3(-0.70539f, 0.12032f, 0.01842f),
                         localAngles = new Vector3(70.31753f, 62.26086f, 287.2839f),
@@ -1539,7 +1569,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayHippo"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayHippo"),
                         childName = "Chest",
                         localPos = new Vector3(0.00655f, 0.11081f, 0.21627f),
                         localAngles = new Vector3(11.20005f, 351.6793f, 344.3522f),
@@ -1559,7 +1589,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBrainstalk"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBrainstalk"),
                         childName = "Head",
                         localPos = new Vector3(0.04038f, 0.12258f, 0.03265f),
                         localAngles = new Vector3(39.83437f, 0f, 0f),
@@ -1579,7 +1609,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayCorpseFlower"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayCorpseFlower"),
                         childName = "UpperArmL",
                         localPos = new Vector3(0.15459f, 0.1895f, -0.15276f),
                         localAngles = new Vector3(76.12807f, 336.4276f, 180f),
@@ -1599,7 +1629,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayFossil"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayFossil"),
                         childName = "Pelvis",
                         localPos = new Vector3(-0.00514f, 0.28757f, 0.1698f),
                         localAngles = new Vector3(0f, 89.42922f, 0f),
@@ -1619,7 +1649,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayAntler"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayAntler"),
                         childName = "Head",
                         localPos = new Vector3(0.07414f, 0.19751f, -0.0258f),
                         localAngles = new Vector3(344.5861f, 132.518f, 356.9124f),
@@ -1629,7 +1659,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayAntler"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayAntler"),
                         childName = "Head",
                         localPos = new Vector3(-0.07414f, 0.19751f, -0.0258f),
                         localAngles = new Vector3(15.41393f, 42f, 356.9124f),
@@ -1649,7 +1679,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayGoldHeart"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayGoldHeart"),
                         childName = "Chest",
                         localPos = new Vector3(-0.10856f, 0.05727f, 0.17572f),
                         localAngles = new Vector3(340.0459f, 326.5524f, 1.80304f),
@@ -1669,7 +1699,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBrokenMask"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBrokenMask"),
                         childName = "Chest",
                         localPos = new Vector3(0.13391f, 0.05807f, 0.15326f),
                         localAngles = new Vector3(20.49514f, 15.08605f, 357.7958f),
@@ -1689,7 +1719,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBrooch"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBrooch"),
                         childName = "LowerArmR",
                         localPos = new Vector3(-0.0614f, 0.18859f, 0.02649f),
                         localAngles = new Vector3(81.03616f, 314.4032f, 15.99828f),
@@ -1709,7 +1739,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayGlowFlower"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayGlowFlower"),
                         childName = "UpperArmR",
                         localPos = new Vector3(-0.15287f, 0.19369f, -0.13507f),
                         localAngles = new Vector3(0f, 222.6754f, 0f),
@@ -1729,7 +1759,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBirdFoot"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBirdFoot"),
                         childName = "CalfR",
                         localPos = new Vector3(0f, 0.76226f, 0.16685f),
                         localAngles = new Vector3(0f, 270f, 272.4676f),
@@ -1749,7 +1779,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayRazorwireLeft"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayRazorwireLeft"),
                         childName = "UpperArmL",
                         localPos = new Vector3(0f, 0f, 0f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -1769,7 +1799,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBirdEye"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBirdEye"),
                         childName = "Head",
                         localPos = new Vector3(-0.07555f, 0.12033f, 0.15897f),
                         localAngles = new Vector3(301.2076f, 146.43f, 189.6029f),
@@ -1789,7 +1819,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayJellyGuts"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayJellyGuts"),
                         childName = "Chest",
                         localPos = new Vector3(0.01407f, 0.31906f, 0.0984f),
                         localAngles = new Vector3(47.005f, 278.725f, 140.888f),
@@ -1809,7 +1839,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBeads"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBeads"),
                         childName = "UpperArmL",
                         localPos = new Vector3(-0.00329f, 0.16805f, 0.05026f),
                         localAngles = new Vector3(0f, 0f, 99.29353f),
@@ -1829,7 +1859,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayInterstellarDeskPlant"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayInterstellarDeskPlant"),
                         childName = "Chest",
                         localPos = new Vector3(0.17918f, 0.26891f, 0.01079f),
                         localAngles = new Vector3(299.256f, 26.12627f, 249.1656f),
@@ -1849,7 +1879,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBear"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBear"),
                         childName = "Chest",
                         localPos = new Vector3(0.01423f, 0.21404f, -0.20479f),
                         localAngles = new Vector3(359.4737f, 180.8153f, 2.00493f),
@@ -1869,7 +1899,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayDeathMark"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayDeathMark"),
                         childName = "UpperArmR",
                         localPos = new Vector3(-0.00634f, 0.14811f, -0.02871f),
                         localAngles = new Vector3(277.5254f, 0f, 346.0966f),
@@ -1889,7 +1919,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayWilloWisp"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayWilloWisp"),
                         childName = "LowerArmR",
                         localPos = new Vector3(-0.00096f, 0.41647f, 0.00463f),
                         localAngles = new Vector3(2.77335f, 359.1895f, 176.0624f),
@@ -1909,7 +1939,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplaySeed"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplaySeed"),
                         childName = "Chest",
                         localPos = new Vector3(0.05344f, -0.04829f, 0.15088f),
                         localAngles = new Vector3(306.1523f, 261.2392f, 242.3862f),
@@ -1929,7 +1959,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayWhip"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayWhip"),
                         childName = "Pelvis",
                         localPos = new Vector3(0.23977f, 0.22895f, -0.00201f),
                         localAngles = new Vector3(1.87579f, 354.8801f, 24.10377f),
@@ -1949,7 +1979,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayStealthkit"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayStealthkit"),
                         childName = "ThighR",
                         localPos = new Vector3(-0.08927f, 0.20322f, 0.12008f),
                         localAngles = new Vector3(90f, 139.0103f, 0f),
@@ -1969,7 +1999,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayShieldGenerator"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayShieldGenerator"),
                         childName = "Chest",
                         localPos = new Vector3(0f, 0.2649f, 0.0689f),
                         localAngles = new Vector3(304.1204f, 90f, 270f),
@@ -1989,7 +2019,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayTeslaCoil"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayTeslaCoil"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.10735f, -0.0308f),
                         localAngles = new Vector3(295.9102f, 0f, 0f),
@@ -2009,7 +2039,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayShieldBug"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayShieldBug"),
                         childName = "Head",
                         localPos = new Vector3(-0.0868f, 0.26797f, 0f),
                         localAngles = new Vector3(11.8181f, 268.0985f, 359.6104f),
@@ -2019,7 +2049,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayShieldBug"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayShieldBug"),
                         childName = "Head",
                         localPos = new Vector3(0.07771f, 0.26797f, 0f),
                         localAngles = new Vector3(348.1819f, 268.0985f, 0.3896f),
@@ -2039,7 +2069,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayAlienHead"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayAlienHead"),
                         childName = "Weapon",
                         localPos = new Vector3(0.02859f, -0.04522f, 0.01442f),
                         localAngles = new Vector3(284.1172f, 243.7966f, 260.89f),
@@ -2059,7 +2089,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplaySkullCrown"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplaySkullCrown"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.2442f, 0.03993f),
                         localAngles = new Vector3(15.9298f, 0f, 0f),
@@ -2079,7 +2109,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayWarHorn"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayWarHorn"),
                         childName = "Head",
                         localPos = new Vector3(-0.06565f, 0.01069f, 0.33667f),
                         localAngles = new Vector3(321.7959f, 253.9446f, 1.83296f),
@@ -2099,7 +2129,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplaySteakCurved"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplaySteakCurved"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.18682f, 0.13945f),
                         localAngles = new Vector3(285.4012f, 2E-05f, -1E-05f),
@@ -2119,7 +2149,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayToothMeshLarge"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayToothMeshLarge"),
                         childName = "Head",
                         localPos = new Vector3(0.04568f, -0.00035f, 0.19319f),
                         localAngles = new Vector3(25.05384f, 17.60428f, 7.65284f),
@@ -2129,7 +2159,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayToothMeshLarge"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayToothMeshLarge"),
                         childName = "Head",
                         localPos = new Vector3(-0.02361f, -0.003f, 0.19844f),
                         localAngles = new Vector3(25.68274f, 348.6905f, 355.0463f),
@@ -2149,7 +2179,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayPearl"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayPearl"),
                         childName = "LowerArmR",
                         localPos = new Vector3(0f, 0f, 0f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2169,7 +2199,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayShinyPearl"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayShinyPearl"),
                         childName = "Chest",
                         localPos = new Vector3(0f, 0f, 0f),
                         localAngles = new Vector3(328.163f, 284.6944f, 27.83253f),
@@ -2189,7 +2219,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayTome"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayTome"),
                         childName = "ThighR",
                         localPos = new Vector3(-0.13437f, 0.02671f, 0.00331f),
                         localAngles = new Vector3(4.74548f, 269.9583f, 359.6995f),
@@ -2209,7 +2239,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplaySquidTurret"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplaySquidTurret"),
                         childName = "Chest",
                         localPos = new Vector3(-0.0164f, 0.23145f, 0.0095f),
                         localAngles = new Vector3(0f, 90f, 7.10089f),
@@ -2229,7 +2259,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayFrostRelic"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayFrostRelic"),
                         childName = "Base",
                         localPos = new Vector3(-0.658f, -1.0806f, 0.015f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2249,7 +2279,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayTalisman"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayTalisman"),
                         childName = "Base",
                         localPos = new Vector3(0.8357f, -0.7042f, -0.2979f),
                         localAngles = new Vector3(270f, 0f, 0f),
@@ -2269,7 +2299,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayLaserTurbine"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayLaserTurbine"),
                         childName = "Pelvis",
                         localPos = new Vector3(0f, 0.27358f, 0.17357f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2289,7 +2319,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayFocusedConvergence"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayFocusedConvergence"),
                         childName = "Base",
                         localPos = new Vector3(-0.0554f, -1.6605f, -0.3314f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2309,7 +2339,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayFireballsOnHit"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayFireballsOnHit"),
                         childName = "HandR",
                         localPos = new Vector3(0.01431f, 0.07931f, 0.00529f),
                         localAngles = new Vector3(344.0956f, 176.9312f, 2.92877f),
@@ -2329,7 +2359,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplaySiphonOnLowHealth"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplaySiphonOnLowHealth"),
                         childName = "LowerArmR",
                         localPos = new Vector3(-0.00745f, 0.25453f, 0.03687f),
                         localAngles = new Vector3(354.4601f, 0f, 0f),
@@ -2349,7 +2379,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBleedOnHitAndExplode"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBleedOnHitAndExplode"),
                         childName = "ThighR",
                         localPos = new Vector3(-0.11983f, -0.00669f, 0.03566f),
                         localAngles = new Vector3(0f, 0f, 105.2972f),
@@ -2369,7 +2399,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayMonstersOnShrineUse"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayMonstersOnShrineUse"),
                         childName = "Chest",
                         localPos = new Vector3(-0.08897f, 0.00789f, 0.20548f),
                         localAngles = new Vector3(55.74505f, 264.118f, 355.134f),
@@ -2389,7 +2419,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayRandomDamageZone"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayRandomDamageZone"),
                         childName = "Chest",
                         localPos = new Vector3(-1E-05f, 0.17219f, -0.30708f),
                         localAngles = new Vector3(34.84705f, 0f, 0f),
@@ -2409,7 +2439,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayFruit"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayFruit"),
                         childName = "Weapon",
                         localPos = new Vector3(-0.08626f, -0.15387f, 0.21263f),
                         localAngles = new Vector3(16.74619f, 94.02277f, 334.7391f),
@@ -2429,7 +2459,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayEliteHorn"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayEliteHorn"),
                         childName = "Head",
                         localPos = new Vector3(0.09221f, 0.18718f, -0.03466f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2439,7 +2469,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayEliteHorn"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayEliteHorn"),
                         childName = "Head",
                         localPos = new Vector3(-0.09221f, 0.18718f, -0.03466f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2459,7 +2489,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayEliteRhinoHorn"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayEliteRhinoHorn"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.09709f, 0.19904f),
                         localAngles = new Vector3(315f, 0f, 0f),
@@ -2469,7 +2499,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayEliteRhinoHorn"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayEliteRhinoHorn"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.14871f, 0.15627f),
                         localAngles = new Vector3(300f, 0f, 0f),
@@ -2489,7 +2519,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayEliteIceCrown"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayEliteIceCrown"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.28471f, 0.01687f),
                         localAngles = new Vector3(282.0894f, 0f, 0f),
@@ -2509,7 +2539,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayEliteUrchinCrown"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayEliteUrchinCrown"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.19891f, 0.0624f),
                         localAngles = new Vector3(298.819f, 0f, 0f),
@@ -2529,7 +2559,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayEliteStealthCrown"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayEliteStealthCrown"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.26174f, 0.00841f),
                         localAngles = new Vector3(280.0554f, 0f, 0f),
@@ -2549,7 +2579,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayNeuralImplant"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayNeuralImplant"),
                         childName = "Head",
                         localPos = new Vector3(0f, 0.05455f, 0.41408f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2569,7 +2599,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayRadio"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayRadio"),
                         childName = "ThighL",
                         localPos = new Vector3(0.12572f, -0.04588f, -0.01867f),
                         localAngles = new Vector3(11.69349f, 91.28197f, 186.3007f),
@@ -2589,7 +2619,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayLightningArmRight"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayLightningArmRight"),
                         childName = "UpperArmR",
                         localPos = new Vector3(0f, 0f, 0f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2609,7 +2639,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayPotion"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayPotion"),
                         childName = "HandR",
                         localPos = new Vector3(0.00713f, 0.10868f, -0.11556f),
                         localAngles = new Vector3(63.45895f, 264.0619f, 232.0915f),
@@ -2629,7 +2659,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayEffigy"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayEffigy"),
                         childName = "Pelvis",
                         localPos = new Vector3(0.12859f, 0.21196f, 0.11489f),
                         localAngles = new Vector3(354.6827f, 203.9411f, 339.1208f),
@@ -2649,7 +2679,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayBatteryArray"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayBatteryArray"),
                         childName = "Chest",
                         localPos = new Vector3(0f, 0.19107f, -0.15272f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2669,7 +2699,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayElephantFigure"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayElephantFigure"),
                         childName = "Chest",
                         localPos = new Vector3(-0.17946f, 0.30134f, -0.02533f),
                         localAngles = new Vector3(7.57041f, 0f, 26.79241f),
@@ -2689,7 +2719,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayRecycler"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayRecycler"),
                         childName = "Chest",
                         localPos = new Vector3(0f, 0.18308f, -0.14788f),
                         localAngles = new Vector3(0f, 90f, 343.8301f),
@@ -2709,7 +2739,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayEgg"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayEgg"),
                         childName = "Pelvis",
                         localPos = new Vector3(0.21155f, 0.33451f, 0.00231f),
                         localAngles = new Vector3(284.2241f, 279.7924f, 78.87299f),
@@ -2729,7 +2759,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayWaterPack"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayWaterPack"),
                         childName = "Chest",
                         localPos = new Vector3(0f, 0.02586f, -0.13308f),
                         localAngles = new Vector3(16.98321f, 180f, 0f),
@@ -2749,7 +2779,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayTonic"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayTonic"),
                         childName = "HandR",
                         localPos = new Vector3(0.01919f, 0.09174f, -0.08501f),
                         localAngles = new Vector3(347.4816f, 264.4327f, 270.9305f),
@@ -2769,7 +2799,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayVase"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayVase"),
                         childName = "Pelvis",
                         localPos = new Vector3(-0.21348f, 0.3313f, 0f),
                         localAngles = new Vector3(12.8791f, 90f, 0f),
@@ -2789,7 +2819,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayMeteor"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayMeteor"),
                         childName = "Base",
                         localPos = new Vector3(0f, -1.7606f, -0.9431f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2809,7 +2839,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplaySawmerang"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplaySawmerang"),
                         childName = "Base",
                         localPos = new Vector3(0f, -1.7606f, -0.9431f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2829,7 +2859,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayGravCube"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayGravCube"),
                         childName = "Base",
                         localPos = new Vector3(0f, -1.7606f, -0.9431f),
                         localAngles = new Vector3(0f, 0f, 0f),
@@ -2849,7 +2879,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayScanner"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayScanner"),
                         childName = "Chest",
                         localPos = new Vector3(-0.2131f, 0.25091f, -0.03601f),
                         localAngles = new Vector3(298.4561f, 249.0693f, 90.00001f),
@@ -2869,7 +2899,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayDeathProjectile"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayDeathProjectile"),
                         childName = "Pelvis",
                         localPos = new Vector3(-0.18682f, 0.32519f, 0.07876f),
                         localAngles = new Vector3(338.9847f, 300.7574f, 347.3894f),
@@ -2889,7 +2919,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayLifestealOnHit"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayLifestealOnHit"),
                         childName = "Head",
                         localPos = new Vector3(-0.06527f, 0.13382f, 0.20953f),
                         localAngles = new Vector3(38.51534f, 153.1544f, 92.39183f),
@@ -2909,7 +2939,7 @@ namespace Dancer.Modules.Survivors
                     new ItemDisplayRule
                     {
                         ruleType = ItemDisplayRuleType.ParentedPrefab,
-                        followerPrefab = ItemDisplays.LoadDisplay("DisplayTeamWarCry"),
+                        followerPrefabAddress = ItemDisplays.LoadDisplay("DisplayTeamWarCry"),
                         childName = "Pelvis",
                         localPos = new Vector3(0f, 0.31184f, 0.19003f),
                         localAngles = new Vector3(2.97821f, 0f, 0f),
@@ -2921,17 +2951,6 @@ namespace Dancer.Modules.Survivors
             });
             itemDisplayRuleSet.keyAssetRuleGroups = itemDisplayRules.ToArray();
             itemDisplayRuleSet.GenerateRuntimeValues();
-        }
-
-        private static CharacterModel.RendererInfo[] SkinRendererInfos(CharacterModel.RendererInfo[] defaultRenderers, Material[] materials)
-        {
-            CharacterModel.RendererInfo[] array = new CharacterModel.RendererInfo[defaultRenderers.Length];
-            defaultRenderers.CopyTo(array, 0);
-            array[0].defaultMaterial = materials[0];
-            array[1].defaultMaterial = materials[1];
-            array[bodyRendererIndex].defaultMaterial = materials[2];
-            array[4].defaultMaterial = materials[3];
-            return array;
         }
     }
 }

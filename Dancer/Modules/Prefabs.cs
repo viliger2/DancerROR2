@@ -50,6 +50,13 @@ namespace Dancer.Modules
             GameObject gameObject2 = CreateModel(gameObject, modelName);
             Transform transform = SetupModel(gameObject, gameObject2.transform);
             gameObject2.AddComponent<CharacterModel>().baseRendererInfos = prefab.GetComponentInChildren<CharacterModel>().baseRendererInfos;
+            var skinController = gameObject2.AddComponent<ModelSkinController>();
+            var animator = gameObject2.GetComponent<Animator>();
+#pragma warning disable CS0618 // Type or member is obsolete
+            skinController._animatorController = animator.runtimeAnimatorController;
+            skinController._avatar = animator.avatar;
+#pragma warning restore CS0618 // Type or member is obsolete
+            skinController.skins = prefab.GetComponentInChildren<ModelSkinController>().skins;
             Assets.ConvertAllRenderersToHopooShader(gameObject2);
             return gameObject2.gameObject;
         }
@@ -248,27 +255,36 @@ namespace Dancer.Modules
             RagdollController component = model.GetComponent<RagdollController>();
             if (!component)
             {
-                return;
+                component = model.AddComponent<RagdollController>();
             }
-            if (ragdollMaterial == null)
-            {
-                ragdollMaterial = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Commando/CommandoBody.prefab").WaitForCompletion().GetComponentInChildren<RagdollController>()
-                    .bones[1].GetComponent<Collider>().material;
-            }
-            Transform[] bones = component.bones;
-            foreach (Transform transform in bones)
-            {
-                if ((bool)transform)
-                {
-                    transform.gameObject.layer = LayerIndex.ragdoll.intVal;
-                    Collider component2 = transform.GetComponent<Collider>();
-                    if ((bool)component2)
-                    {
-                        component2.material = ragdollMaterial;
-                        component2.sharedMaterial = ragdollMaterial;
-                    }
-                }
-            }
+
+            //component.bones = new Transform[26];
+            //component.bones[0] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest");
+            //component.bones[1] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/BackRibbon.L");
+            //component.bones[2] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/BackRibbon.L/BackRibbon.L.001");
+            //component.bones[3] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/BackRibbon.L/BackRibbon.L.001/BackRibbon.L.002");
+            //component.bones[4] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine");
+            //component.bones[5] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/BackRibbon.R");
+            //component.bones[6] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/BackRibbon.R/BackRibbon.R.001");
+            //component.bones[7] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/BackRibbon.R/BackRibbon.R.001/BackRibbon.R.002");
+            //component.bones[8] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Neck");
+            //component.bones[9] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Neck/Head 1");
+            //component.bones[10] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.L");
+            //component.bones[11] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.L/UpperArm.L");
+            //component.bones[12] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.L/UpperArm.L/ArmRibbon.L");
+            //component.bones[13] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.L/UpperArm.L/ArmRibbon.L/ArmRibbon.L.001");
+            //component.bones[14] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.L/UpperArm.L/LowerArm.L");
+            //component.bones[15] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.L/UpperArm.L/LowerArm.L/Hand.L");
+            //component.bones[16] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.R");
+            //component.bones[17] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.R/UpperArm.R");
+            //component.bones[18] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.R/UpperArm.R/ArmRibbon.R");
+            //component.bones[19] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.R/UpperArm.R/ArmRibbon.R/ArmRibbon.R.001");
+            //component.bones[20] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.R/UpperArm.R/LowerArm.R");
+            //component.bones[21] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Spine/Chest/Shoulder.R/UpperArm.R/LowerArm.R/Hand.R");
+            //component.bones[22] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Thigh.L");
+            //component.bones[23] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Thigh.L/Shin.L");
+            //component.bones[24] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Thigh.R");
+            //component.bones[25] = model.transform.Find("DancerArmature/ROOT/HipsControl/Hips/Thigh.R/Shin.R");
         }
 
         private static void SetupAimAnimator(GameObject prefab, GameObject model)

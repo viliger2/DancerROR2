@@ -1,20 +1,8 @@
-## Dancer
-
-Adds the Dancer as a survivor.
-
-## To-Do
-- vfx on special are "placeholder"
-- Alt skills and achievements
-- Lore and stuff
-- skill icons
-- name the skills lolllllllllllllll cringe dude wtffffffffff
-
-
-## Credits
- - MonicaTeau for the ribbon debuff icon
- - Viliger for the SOTS update
-
 ## Changelog
+
+ `0.11.0`
+ - updated for HC
+ _There aren't plans to do any balancing or anything of that kind, but the mod needs some work to make it more robust and stable because, quite frankly, currently it is held up with glue and luck. I've done some changes this release, but main things (Entity states and ribbon controller) remain untouched._
 
  `0.10.0`
  - updated for SOTS

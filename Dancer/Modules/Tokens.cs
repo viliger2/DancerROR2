@@ -12,6 +12,7 @@ namespace Dancer.Modules
             string text2 = "lole<color=#CCD3E0>" + Environment.NewLine + Environment.NewLine;
             string text3 = "..and so you beat the game with a borken unfinished character ur not even good lol i havent finished the lore because you dont deserver it";
             string text4 = "..and so";
+            LanguageAPI.Add(text + "GOLD_SKIN_NAME", "Gold");
             LanguageAPI.Add(text + "DEFAULT_SKIN_NAME", "Default");
             LanguageAPI.Add(text + "NAME", "Dancer");
             LanguageAPI.Add(text + "DESCRIPTION", text2);

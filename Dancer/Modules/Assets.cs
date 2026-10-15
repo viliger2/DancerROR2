@@ -15,8 +15,11 @@ namespace Dancer.Modules
     {
         internal const string ASSET_BUNDLE_NAME = "Dancer.dancerassets";
 
-        internal const string SOUNDBANK_DANCER_NAME = "Dancer.DancerBank.bnk";
-        internal const string SOUNDBANK_RIDLEY_NAME = "Dancer.RidleyBank.bnk";
+        internal const string ASSET_BUNDLE_FOLDER = "AssetBundles";
+        internal const string SOUNDBANKS_FOLDER = "Soundbanks";
+
+        internal const string SOUNDBANK_DANCER_NAME = "DancerBank.bnk";
+        internal const string SOUNDBANK_RIDLEY_NAME = "RidleyBank.bnk";
 
         internal static AssetBundle mainAssetBundle;
 
@@ -97,13 +100,9 @@ namespace Dancer.Modules
 
             if (mainAssetBundle == null)
             {
-                mainAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(pathToDll, ASSET_BUNDLE_NAME));
+                mainAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(pathToDll, ASSET_BUNDLE_FOLDER, ASSET_BUNDLE_NAME));
             }
             ShaderConversion(mainAssetBundle);
-            //SoundAPI.SoundBanks.Add(System.IO.Path.Combine(pathToDll, SOUNDBANK_RIDLEY_NAME));
-            //SoundAPI.SoundBanks.Add(System.IO.Path.Combine(pathToDll, SOUNDBANK_DANCER_NAME));
-            //SoundAPI.SoundBanks.Add(SOUNDBANK_DANCER_NAME, typeof(DancerPlugin).Assembly); // files didnt work and idc to find out why
-            //SoundAPI.SoundBanks.Add(SOUNDBANK_RIDLEY_NAME, typeof(DancerPlugin).Assembly);
             crosshairPrefab = mainAssetBundle.LoadAsset<GameObject>("DancerCrosshair");
             crosshairPrefab.AddComponent<HudElement>();
             crosshairPrefab.AddComponent<CrosshairController>();
@@ -154,25 +153,43 @@ namespace Dancer.Modules
             }
         }
 
-        public static void AttachControllerFinderToObjects(AssetBundle assetbundle)
+        internal static void LoadSoundbanks(string folderPath)
         {
-            if (!assetbundle)
+            var akResult = AkSoundEngine.AddBasePath(folderPath);
+            if (akResult == AKRESULT.AK_Success)
             {
-                return;
+                Log.Info($"Added bank base path : {folderPath}");
             }
-            GameObject[] array = assetbundle.LoadAllAssets<GameObject>();
-            GameObject[] array2 = array;
-            foreach (GameObject gameObject in array2)
+            else
             {
-                IEnumerable<Renderer> enumerable = from x in gameObject.GetComponentsInChildren<Renderer>()
-                                                   where (bool)x.sharedMaterial && x.sharedMaterial.shader.name.StartsWith("Hopoo Games")
-                                                   select x;
-                foreach (Renderer item in enumerable)
-                {
-                    MaterialControllerComponents.HGControllerFinder hGControllerFinder = item.gameObject.AddComponent<MaterialControllerComponents.HGControllerFinder>();
-                }
+                Log.Error(
+                    $"Error adding base path : {folderPath} " +
+                    $"Error code : {akResult}");
             }
-            array = null;
+
+            akResult = AkSoundEngine.LoadBank(SOUNDBANK_DANCER_NAME, out var _);
+            if (akResult == AKRESULT.AK_Success)
+            {
+                Log.Info($"Added bank : {SOUNDBANK_DANCER_NAME}");
+            }
+            else
+            {
+                Log.Error(
+                    $"Error loading bank : {SOUNDBANK_DANCER_NAME} " +
+                    $"Error code : {akResult}");
+            }
+
+            akResult = AkSoundEngine.LoadBank(SOUNDBANK_RIDLEY_NAME, out var _);
+            if (akResult == AKRESULT.AK_Success)
+            {
+                Log.Info($"Added bank : {SOUNDBANK_RIDLEY_NAME}");
+            }
+            else
+            {
+                Log.Error(
+                    $"Error loading bank : {SOUNDBANK_RIDLEY_NAME} " +
+                    $"Error code : {akResult}");
+            }
         }
 
         internal static NetworkSoundEventDef CreateNetworkSoundEventDef(string eventName)

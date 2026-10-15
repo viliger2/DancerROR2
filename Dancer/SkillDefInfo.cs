@@ -1,47 +1,50 @@
 using EntityStates;
 using UnityEngine;
 
-internal class SkillDefInfo
+namespace Dancer
 {
-    public string skillName;
+    internal class SkillDefInfo
+    {
+        public string skillName;
 
-    public string skillNameToken;
+        public string skillNameToken;
 
-    public string skillDescriptionToken;
+        public string skillDescriptionToken;
 
-    public Sprite skillIcon;
+        public Sprite skillIcon;
 
-    public SerializableEntityStateType activationState;
+        public SerializableEntityStateType activationState;
 
-    public string activationStateMachineName;
+        public string activationStateMachineName;
 
-    public int baseMaxStock;
+        public int baseMaxStock;
 
-    public float baseRechargeInterval;
+        public float baseRechargeInterval;
 
-    public bool beginSkillCooldownOnSkillEnd;
+        public bool beginSkillCooldownOnSkillEnd;
 
-    public bool canceledFromSprinting;
+        public bool canceledFromSprinting;
 
-    public bool forceSprintDuringState;
+        public bool forceSprintDuringState;
 
-    public bool fullRestockOnAssign;
+        public bool fullRestockOnAssign;
 
-    public InterruptPriority interruptPriority;
+        public InterruptPriority interruptPriority;
 
-    public bool resetCooldownTimerOnUse;
+        public bool resetCooldownTimerOnUse;
 
-    public bool isCombatSkill;
+        public bool isCombatSkill;
 
-    public bool mustKeyPress;
+        public bool mustKeyPress;
 
-    public bool cancelSprintingOnActivation;
+        public bool cancelSprintingOnActivation;
 
-    public int rechargeStock;
+        public int rechargeStock;
 
-    public int requiredStock;
+        public int requiredStock;
 
-    public int stockToConsume;
+        public int stockToConsume;
 
-    public string[] keywordTokens;
+        public string[] keywordTokens;
+    }
 }

@@ -1,10 +1,13 @@
 using UnityEngine;
 
-internal class CustomRendererInfo
+namespace Dancer
 {
-	internal string childName;
+	internal class CustomRendererInfo
+	{
+		internal string childName;
 
-	internal Material material;
+		internal Material material;
 
-	internal bool ignoreOverlays;
+		internal bool ignoreOverlays;
+	}
 }

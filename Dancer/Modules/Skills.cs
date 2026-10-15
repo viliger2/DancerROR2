@@ -163,6 +163,7 @@ namespace Dancer.Modules
         internal static SkillDef CreateSkillDef(SkillDefInfo skillDefInfo)
         {
             SkillDef skillDef = ScriptableObject.CreateInstance<SkillDef>();
+            (skillDef as ScriptableObject).name = skillDefInfo.skillName;
             skillDef.skillName = skillDefInfo.skillName;
             skillDef.skillNameToken = skillDefInfo.skillNameToken;
             skillDef.skillDescriptionToken = skillDefInfo.skillDescriptionToken;

@@ -34,6 +34,10 @@ namespace Dancer.Modules
             contentPack.skillFamilies.Add(Skills.skillFamilies.ToArray());
             contentPack.survivorDefs.Add(Prefabs.survivorDefinitions.ToArray());
             contentPack.networkedObjectPrefabs.Add(Assets.networkedObjectPrefabs.ToArray());
+
+            var pathToDll = System.IO.Path.GetDirectoryName(typeof(DancerPlugin).Assembly.Location);
+            Assets.LoadSoundbanks(System.IO.Path.Combine(pathToDll, Assets.SOUNDBANKS_FOLDER));
+
             args.ReportProgress(1f);
             yield break;
         }

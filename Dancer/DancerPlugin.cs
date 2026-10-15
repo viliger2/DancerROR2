@@ -3,27 +3,31 @@ using Dancer.Modules;
 using Dancer.Modules.Components;
 using Dancer.SoftDependencies;
 using HG;
+using R2API;
 using RoR2;
 using RoR2.ContentManagement;
 using RoR2.Orbs;
+using System;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Networking;
 
+[assembly: HG.Reflection.SearchableAttribute.OptInAttribute]
 namespace Dancer
 {
     [BepInPlugin(MODUID, MODNAME, MODVERSION)]
-    [BepInDependency(R2API.DotAPI.PluginGUID)]
+    //[BepInDependency(R2API.DotAPI.PluginGUID)]
     [BepInDependency(R2API.LanguageAPI.PluginGUID)]
-    [BepInDependency(R2API.SoundAPI.PluginGUID)]
     [BepInDependency(R2API.PrefabAPI.PluginGUID)]
+    [BepInDependency(R2API.RecalculateStatsAPI.PluginGUID)]
+
     public class DancerPlugin : BaseUnityPlugin
     {
         public const string MODUID = "com.nayDPz.Dancer";
 
         public const string MODNAME = "Dancer";
 
-        public const string MODVERSION = "0.10.0";
+        public const string MODVERSION = "0.11.0";
 
         public const string developerPrefix = "nayDPz";
 
@@ -31,12 +35,22 @@ namespace Dancer
 
         public static DancerPlugin instance;
 
+        internal static BodyIndex dancerBodyIndex;
+
         private void Awake()
         {
             instance = this;
+            Log.Init(this.Logger);
+#if DEBUG == true
+            On.RoR2.Networking.NetworkManagerSystemSteam.OnClientConnect += (s, u, t) => { };
+            Log.Error("Dancer is in a debug build! If you see this in release builds - report immediately since multiplayer will not work!");
+#endif
+
+            Content.DamageTypes.Ribbon = DamageAPI.ReserveDamageType();
+            OrbAPI.AddOrb<DancerOrb>();
+
             Modules.Assets.PopulateAssets();
             Modules.Config.ReadConfig();
-            SoundBanks.Init();
             States.RegisterStates();
             Buffs.RegisterBuffs();
             Projectiles.RegisterProjectiles();
@@ -54,6 +68,7 @@ namespace Dancer
             {
                 CustomEmotesAPICompat.SetupSkeleton();
             }
+
             ContentManager.onContentPacksAssigned += LateSetup;
             Hook();
         }
@@ -71,24 +86,34 @@ namespace Dancer
         private void Hook()
         {
             On.RoR2.HealthComponent.TakeDamage += HealthComponent_TakeDamage;
-            On.RoR2.CharacterBody.RecalculateStats += CharacterBody_RecalculateStats;
+            R2API.RecalculateStatsAPI.GetStatCoefficients += RecalculateStatsAPI_GetStatCoefficients;
         }
 
-        private void CharacterBody_RecalculateStats(On.RoR2.CharacterBody.orig_RecalculateStats orig, CharacterBody self)
+        [SystemInitializer(new Type[] { typeof(BodyCatalog) })]
+        public static void InitBodyCatalog()
         {
-            orig.Invoke(self);
-            if (self.HasBuff(Buffs.ribbonDebuff))
+            dancerBodyIndex = BodyCatalog.FindBodyIndex("DancerBody");
+        }
+
+        private void RecalculateStatsAPI_GetStatCoefficients(CharacterBody sender, R2API.RecalculateStatsAPI.StatHookEventArgs args)
+        {
+            if (sender.HasBuff(Buffs.ribbonDebuff))
             {
-                self.moveSpeed *= 0.75f;
+                args.moveSpeedReductionMultAdd += 0.25f;
             }
         }
 
         private void HealthComponent_TakeDamage(On.RoR2.HealthComponent.orig_TakeDamage orig, RoR2.HealthComponent self, RoR2.DamageInfo damageInfo)
         {
+            if (!self || self == null)
+            {
+                orig(self, damageInfo);
+                return;
+            }
             RibbonController ribbonController = RibbonController.FindRibbonController(self.gameObject);
             if (damageInfo != null && (bool)damageInfo.attacker && (bool)damageInfo.attacker.GetComponent<CharacterBody>())
             {
-                if (damageInfo.attacker.GetComponent<CharacterBody>().baseNameToken == "NDP_DANCER_BODY_NAME")
+                if (damageInfo.attacker.GetComponent<CharacterBody>().bodyIndex == dancerBodyIndex)
                 {
                     if ((bool)ribbonController && damageInfo.procChainMask.mask == 0 && damageInfo.damageType != DamageType.DoT && damageInfo.damageType != DamageType.ApplyMercExpose)
                     {
@@ -137,9 +162,8 @@ namespace Dancer
                             ribbonController.inflictorRoot = damageInfo.attacker;
                         }
                     }
-                    if (damageInfo.damageType == DamageType.FruitOnHit)
+                    if (damageInfo.damageType.HasModdedDamageType(Content.DamageTypes.Ribbon))
                     {
-                        damageInfo.damageType = DamageType.Generic;
                         float ribbonDebuffDuration = Buffs.ribbonDebuffDuration;
                         if ((bool)ribbonController)
                         {
@@ -147,7 +171,7 @@ namespace Dancer
                         }
                         else
                         {
-                            GameObject gameObject = Object.Instantiate(Modules.Assets.ribbonController, self.gameObject.transform);
+                            GameObject gameObject = UnityEngine.Object.Instantiate(Modules.Assets.ribbonController, self.gameObject.transform);
                             RibbonController component3 = gameObject.GetComponent<RibbonController>();
                             component3.timer = ribbonDebuffDuration;
                             component3.NetworkownerRoot = self.gameObject;
@@ -162,7 +186,7 @@ namespace Dancer
                         damageInfo.damageType = DamageType.Stun1s;
                     }
                 }
-                if (self.body.baseNameToken == "NDP_DANCER_BODY_NAME" && self.body.HasBuff(Buffs.parryBuff))
+                if (self.body.HasBuff(Buffs.parryBuff))
                 {
                     damageInfo.rejected = true;
                     self.body.RemoveBuff(Buffs.parryBuff);
